@@ -32,7 +32,10 @@ The AI agent is composed of several modules that work together to observe the ga
 1. Clone the repository: `git clone https://github.com/your-username/ai-text-adventure-player.git`
 2. Navigate to the project directory: `cd ai-text-adventure-player`
 3. Install the required dependencies: `pip install -r requirements.txt`
-4. Create a `settings.json` file in the project directory with your OpenAI API key:
+4. Create an OpenRouter API key:
+   - OpenRouter is a service that provides different language models with a single interface, making it easier to switch between them. It offers a Standardized API that allows you to use the same code with different models or providers.
+   - To create an OpenRouter API key, visit https://openrouter.ai/ and sign up for an account.
+5. Create a `settings.json` file in the project directory with your OpenAI API key:
 
 ```json
 {
