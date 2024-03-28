@@ -45,7 +45,7 @@ The AI agent is composed of several modules that work together to observe the ga
 }
 ```
 
-5. Run the main script: `python main.py`
+6. Run the main script: `python main.py` or `python simple-agent.py` (This will start the AI agent to play The Dreamhold)
 
 ## Dependencies
 
@@ -56,6 +56,10 @@ The project relies on the following Python libraries:
 - `beautifulsoup4`: For parsing HTML content
 
 Make sure to install these dependencies before running the project.
+
+## Notes
+
+Somehow simple agent seems to be working better than the main agent. The main agent seems to get stuck more often.
 
 ## Contributing
 
