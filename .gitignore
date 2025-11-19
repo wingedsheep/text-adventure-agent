@@ -292,4 +292,4 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,osx,intellij+all
 
-settings.json
+config/settings.json

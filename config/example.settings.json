@@ -1,0 +1,16 @@
+{
+  "api": {
+    "base_url": "https://openrouter.ai/api/v1",
+    "key": "YOUR_API_KEY_HERE",
+    "model": "google/gemini-3-pro-preview",
+    "reasoning_effort": "medium"
+  },
+  "game": {
+    "url": "https://eblong.com/zarf/zweb/dreamhold/",
+    "headless": false
+  },
+  "agent": {
+    "use_reflection": false,
+    "memory_limit": 300
+  }
+}
