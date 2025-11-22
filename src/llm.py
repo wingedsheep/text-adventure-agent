@@ -1,4 +1,5 @@
 import logging
+import time
 import requests
 
 logger = logging.getLogger(__name__)
@@ -6,11 +7,13 @@ logger = logging.getLogger(__name__)
 
 class LLMClient:
     def __init__(self, config):
-        # Note: We target the responses endpoint directly
         self.endpoint = "https://openrouter.ai/api/v1/responses"
         self.api_key = config["api"]["key"]
         self.model = config["api"]["model"]
         self.effort = config["api"].get("reasoning_effort", "low")
+        # Configurable retry settings
+        self.max_retries = 3
+        self.retry_delay = 5  # seconds
 
     def chat(self, system_prompt: str, user_context: str) -> str:
         headers = {
@@ -18,7 +21,6 @@ class LLMClient:
             "Content-Type": "application/json"
         }
 
-        # Construct payload for Responses API Beta
         payload = {
             "model": self.model,
             "reasoning": {
@@ -38,44 +40,51 @@ class LLMClient:
             ]
         }
 
-        try:
-            response = requests.post(self.endpoint, headers=headers, json=payload)
-            response.raise_for_status()
-            result = response.json()
+        # Retry Logic
+        for attempt in range(1, self.max_retries + 1):
+            response = None  # Initialize here to prevent UnboundLocalError
+            try:
+                response = requests.post(self.endpoint, headers=headers, json=payload, timeout=30)
+                response.raise_for_status()
+                result = response.json()
 
-            final_text = ""
+                final_text = ""
 
-            # The Responses API returns a list of outputs (Reasoning blocks + Message blocks)
-            if "output" in result:
-                for item in result["output"]:
+                if "output" in result:
+                    for item in result["output"]:
+                        # 1. Handle Reasoning logging
+                        if item.get("type") == "reasoning":
+                            reasoning_content = ""
+                            if "summary" in item and item["summary"]:
+                                reasoning_content = "\n".join(item["summary"])
+                            elif "content" in item:
+                                reasoning_content = str(item["content"])
 
-                    # 1. Handle Reasoning
-                    if item.get("type") == "reasoning":
-                        # Some models return a summary, some text, some encrypted content
-                        # We try to grab whatever text is available
-                        reasoning_content = ""
+                            if reasoning_content:
+                                logger.info(f"\n[AI REASONING]:\n{reasoning_content}\n{'-' * 20}")
 
-                        if "summary" in item and item["summary"]:
-                            reasoning_content = "\n".join(item["summary"])
-                        elif "content" in item:
-                            # Sometimes raw content is here depending on model
-                            reasoning_content = str(item["content"])
+                        # 2. Handle Final Message extraction
+                        elif item.get("type") == "message":
+                            for content_part in item.get("content", []):
+                                if content_part.get("type") == "output_text":
+                                    final_text += content_part.get("text", "")
 
-                        if reasoning_content:
-                            logger.info(f"\n[AI REASONING]:\n{reasoning_content}\n{'-' * 20}")
-                        else:
-                            logger.info("\n[AI REASONING]: (Content encrypted or hidden by provider)")
+                return final_text.strip()
 
-                    # 2. Handle Final Message
-                    elif item.get("type") == "message":
-                        for content_part in item.get("content", []):
-                            if content_part.get("type") == "output_text":
-                                final_text += content_part.get("text", "")
+            except Exception as e:
+                logger.error(f"LLM API Attempt {attempt}/{self.max_retries} Failed: {e}")
 
-            return final_text.strip()
+                # Only try to log response text if we actually got a response object
+                if response is not None:
+                    try:
+                        logger.error(f"Response Text: {response.text}")
+                    except:
+                        pass
 
-        except Exception as e:
-            logger.error(f"LLM API Error: {e}")
-            if response:
-                logger.error(f"Response Body: {response.text}")
-            return ""
+                if attempt < self.max_retries:
+                    time.sleep(self.retry_delay)
+                else:
+                    logger.error("Max retries reached. Returning fallback.")
+                    return ""  # Return empty string to signal failure
+
+        return ""

@@ -4,6 +4,7 @@ import os
 from src.engine import GameEngine
 from src.browser import GameBrowser
 from src.llm import LLMClient
+from src.tracker import GameTracker
 
 # Setup logging
 logging.basicConfig(
@@ -22,7 +23,6 @@ def load_config():
     config_path = os.path.join(base_dir, "config", "settings.json")
 
     if not os.path.exists(config_path):
-        # Print the exact path python is trying to look at to help debug
         raise FileNotFoundError(f"Config not found at: {config_path}")
 
     with open(config_path) as f:
@@ -33,11 +33,15 @@ def main():
     try:
         config = load_config()
 
+        # 1. Create Dependencies
         llm = LLMClient(config)
         browser = GameBrowser(config)
+        tracker = GameTracker()
 
-        # Pass full config to Engine now
-        engine = GameEngine(browser, llm, config)
+        # 2. Inject Dependencies into Engine
+        engine = GameEngine(browser, llm, tracker, config)
+
+        # 3. Run
         engine.run()
 
     except Exception as e:
